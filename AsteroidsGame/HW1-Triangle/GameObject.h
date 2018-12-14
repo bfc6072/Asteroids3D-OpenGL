@@ -1,20 +1,12 @@
 #pragma once
-#include <glad/glad.h> 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+
+#include "Standard_Includes.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "stb_image.h"
 #include "Mesh.h"
 #include "Shader.h"
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <map>
-#include <vector>
-#include <glm/gtc/type_ptr.hpp>
 using namespace std;
 class GameObject
 {
@@ -28,21 +20,8 @@ public:
 	
 
 	/* Physics Data */
-	bool isStatic;
-
-	//Primary
 	vec3 position;
-	vec3 momentum;
 
-	//Secondary
-	vec3 velocity;
-
-	//Constants
-	float mass;
-	float inversemass;
-
-
-	
 	/*  Functions   */
 	GameObject(string const &path);
 	GameObject(string const &path, vec3 pos, vec3 vel);// , bool gamma = false);

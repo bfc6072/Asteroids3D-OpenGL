@@ -1,9 +1,5 @@
 #pragma once
-#include <glad/glad.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <string>
-#include <vector>
+#include "Standard_Includes.h"
 #include "Shader.h"
 using namespace std;
 using namespace glm;

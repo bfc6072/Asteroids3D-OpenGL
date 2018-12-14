@@ -3,15 +3,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <GLAD\glad.h>
-
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <GLM/gtc/matrix_transform.hpp>
-#include <GLM/gtc/type_ptr.hpp>
-
+#include "Standard_Includes.h"
 using namespace std;
 
 

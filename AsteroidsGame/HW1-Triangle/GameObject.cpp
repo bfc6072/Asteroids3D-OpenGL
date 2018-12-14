@@ -1,24 +1,10 @@
 #include "GameObject.h"
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/quaternion.hpp>
-#include <glm/glm.hpp>
 
 unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false);
 
 GameObject::GameObject(string const &path)//, bool gamma = false)// : gammaCorrection(gamma)
 {
-	isStatic = true;
 	loadModel(path);
-	position = vec3(0);
-	velocity = vec3(0);
-}
-
-GameObject::GameObject(string const &path, vec3 pos, vec3 vel)//, bool gamma = false)// : gammaCorrection(gamma)
-{
-	isStatic = false;
-	loadModel(path);
-	position = pos;
-	velocity = vel;
 }
 
 // draws the model, and thus all its meshes
@@ -238,24 +224,7 @@ unsigned int TextureFromFile(const char *path, const string &directory, bool gam
 #pragma endregion
 
 
-void GameObject::update(float dt, glm::mat4 PV)
-{
-	if (!isStatic)
-	{
-		//Summing all forces acting on the object
-		position = position + velocity * dt;
-	}
-	
-}
-
-void GameObject::recalcVelocty()
-{
-	velocity = momentum * inversemass;
-}
-
-
 GameObject::~GameObject()
 {
-	//delete position;
 }
 

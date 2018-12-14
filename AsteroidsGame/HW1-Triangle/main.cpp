@@ -1,6 +1,4 @@
 #include "Main_Fixed_Data.h"
-#include "Collisions.h"
-#pragma endregion
 
 int main()
 {
@@ -23,7 +21,7 @@ int main()
 	//Call back if window is resized
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); //Tells GLFW we want to call this function on every window resize
-	glfwSetCursorPosCallback(window, mouse_callback);
+	//glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
 	// tell GLFW to capture our mouse
@@ -37,6 +35,7 @@ int main()
 		cout << "Failed to initialize GLAD" << endl;
 		return -1;
 	}
+	srand(time(NULL));
 
 #pragma endregion
 
@@ -48,24 +47,16 @@ int main()
 
 	//Build and compile shader
 	Shader shader("VertexShader.vert", "FragmentShader.frag");
-
-	GameObject O_Frame("resources/Frame.obj");
-	GameObject O_Paddle_L("resources/Paddle_Left.obj");
-	GameObject O_Paddle_R("resources/Paddle_Right.obj");
-	GameObject O_Bumper_BL("resources/Bumper_BotLeft.obj");
-	GameObject O_Bumper_BR("resources/Bumper_BotRight.obj");
-	GameObject O_Bumper_T("resources/Bumper_Top.obj");
-	GameObject O_Ball("resources/Ball.obj", vec3(0, 0, 0), vec3(0, 1, 0));
-	GameObject objectList[] =
+	int asteroidCount = 300;
+	vector<Asteroid> objectList;
+	for (int i = 0; i < asteroidCount; i++)
 	{
-		O_Frame,
-		O_Paddle_L,
-		O_Paddle_R,
-		O_Bumper_BL,
-		O_Bumper_BR,
-		O_Bumper_T,
-		O_Ball
-	};
+		objectList.push_back(Asteroid("resources/Ball.obj"));
+	}
+	
+	Ship ship("resources/ship.obj");
+
+
 
 	unsigned int crate_diffuse = LoadTexture("container.png");
 	unsigned int crate_specular = LoadTexture("container_specular.png");
@@ -73,7 +64,7 @@ int main()
 	shader.StartPipelineProgram();
 	shader.setInt("material.diffuse", 2); // or with shader class
 	shader.setInt("material.specular", 1);
-	SetLighting(shader, objectList);
+	SetLighting(shader, &objectList[0]);
 
 	//Bind textures
 	glActiveTexture(GL_TEXTURE0);
@@ -94,32 +85,39 @@ int main()
 		lastFrame = currentFrame;
 
 		//Input commands
-		processInput(window);
-    
+		processInput(window, &ship);
+		ship.fly();
+		
 		//Rendering commands
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//View/Projection/world transform
 		mat4 projection = perspective(glm::radians(camera.Zoom), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
-		mat4 view = camera.GetViewMatrix();
+		vec3 eye = ship.getPosition();
+		vec3 at = eye + ship.getDirection();
+		vec3 up = ship.getVertical();
+		mat4 view = glm::lookAt(eye, at, up);
 		mat4 model = mat4(1.0f);
 		shader.StartPipelineProgram(projection, view, model);
-		shader.setVec3("viewPos", camera.Position);
+		shader.setVec3("viewPos", ship.getPosition());
 		shader.setFloat("material.shininess", 32.0f);
 		shader.setMat4("model", model);
 
 		//Draw our Objects
-		for (int i = 0; i < 7; i++)
+		for (int i = 0; i < asteroidCount; i++)
 		{
-			mat4 model = mat4(1.0f);
-			GameObject body = objectList[i];
-			
-			body.update(deltaTime, projection*view);
-			model = translate(model, body.position);
+			Asteroid* obj = &objectList[i];
+			obj->Move(deltaTime);
+			model = mat4(1.0f);
+			model = translate(model, obj->position);
 			shader.setMat4("model", model);
-			body.Draw(shader);
+			obj->Draw(shader);
 		}
+		model = mat4(1.0f);
+		model = inverse(glm::lookAt(eye, at, up));
+		shader.setMat4("model", model);
+		ship.Draw(shader);
 		
 		//Check and call events | Buffer swapping
 		glfwSwapBuffers(window);
@@ -137,25 +135,32 @@ int main()
 /*
 * Input method
 */
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, Ship *ship)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
+
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		ship->setSpeed(deltaTime / 100); //camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		ship->setSpeed(-deltaTime / 100); //camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		ship->yaw(0.002f);
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		ship->yaw(-0.002f);
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
+		ship->pitch(0.01f);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
+		ship->pitch(-0.01f);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
+		ship->roll(-0.02f);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		camera.ProcessKeyboard(UP, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		camera.ProcessKeyboard(DOWN, deltaTime);
+		ship->roll(0.02f);
+
+
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		camera.Position = vec3(0.0f, 0.0f, 3.0f);
+		ship->teleport(vec3(0,0,0));
 }
 
 unsigned int LoadTexture(string path)
@@ -256,30 +261,31 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) //GLFW
 	glViewport(0, 0, width, height);
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-	if (firstMouse)
-	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
-	lastX = xpos;
-	lastY = ypos;
-
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		camera.ProcessMouseMovement(xoffset, yoffset);
-}
+//void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+//{
+//	if (firstMouse)
+//	{
+//		lastX = xpos;
+//		lastY = ypos;
+//		firstMouse = false;
+//	}
+//
+//	float xoffset = xpos - lastX;
+//	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+//
+//	lastX = xpos;
+//	lastY = ypos;
+//
+//	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+//	ship.yaw(xoffset);
+//		//camera.ProcessMouseMovement(xoffset, yoffset);
+//}
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	camera.ProcessMouseScroll(yoffset);
+	//camera.ProcessMouseScroll(yoffset);
 }
 
 //struct LightSettings

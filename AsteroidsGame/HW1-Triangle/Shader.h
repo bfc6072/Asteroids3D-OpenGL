@@ -1,3 +1,12 @@
+/*
+Authors: Barrington Campbell & Kaloyana Mihova
+Class: IGME.309.03
+Proffesor: David Schwartz
+
+File Name: Shader.h
+Description: Shader management class handles any shader information that needs to be changed and holds the
+			 necessary methods to manipulate different values.
+*/
 #pragma once
 
 #ifndef SHADER_H

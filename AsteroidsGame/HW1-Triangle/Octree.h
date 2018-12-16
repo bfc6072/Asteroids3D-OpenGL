@@ -1,17 +1,30 @@
+/*
+Authors: Barrington Campbell & Kaloyana Mihova
+Class: IGME.309.03
+Proffesor: David Schwartz
+
+File Name: Octree.h
+Description: Octree management. This code isn't working how it's supposed to unfortunately. Didn't have
+			 enough time to debug and submit on time.
+*/
+
 #pragma once
 #include "Standard_Includes.h"
 #include "GameObject.h"
+
+//Octree node used within the octree
 class OctreeNode
 {
 	vec3 position; //Node position
 	float size; //Size of the node
-	vector<OctreeNode> *subnodes;
-	vector<GameObject> value;
+	vector<OctreeNode> *subnodes; //Subdivied nodes
+	vector<GameObject> value;	  //Values related to subnodes returned to be checked
 public:
 	OctreeNode();
 	OctreeNode(vec3 pos, float size);
 	~OctreeNode();
-	void Subdivied()
+
+	void Subdivied() //Subdivide different node to be used in Octree
 	{
 		subnodes = new vector<OctreeNode>;
 		for (int i = 0; i < subnodes->size(); i++)
@@ -48,7 +61,7 @@ public:
 		}
 	}
 
-	bool isLeaf()
+	bool isLeaf() //Check to see if there is a leafnode left
 	{
 		return subnodes == nullptr;
 	}
@@ -65,41 +78,28 @@ OctreeNode::OctreeNode(vec3 pos, float size)
 }
 OctreeNode::~OctreeNode() {}
 
+
+//Octree container
 class Octree
 {
 public:
-	enum OctreeIndex
+	enum OctreeIndex //Binary index used to lookup octree node positions
 	{
-		BottomLeftFront = 0, //000
-		BottomRightFront = 2, //010
-		BottomRightBack = 3, //011
-		BottomLeftBack = 1, //001
-		TopLeftFront = 4, //100
-		TopRightFront = 6, //110
-		TopRightBack = 7, //111
-		TopLeftBack = 5, //101
+		BottomLeftFront = 0,	//000
+		BottomRightFront = 2,	//010
+		BottomRightBack = 3,	//011
+		BottomLeftBack = 1,		//001
+		TopLeftFront = 4,		//100
+		TopRightFront = 6,		//110
+		TopRightBack = 7,		//111
+		TopLeftBack = 5,		//101
 	};
 	Octree(vec3 position, float size, int depth);
 	~Octree();
 private:
 	int depth; //Resolution of Octree
-	
-	OctreeNode node;
+	OctreeNode node; //Root octreenode
 
-	int GetIndexOfPosition(vec3 lookupPosition, vec3 nodePosition)
-	{
-		int index = 0;
-
-		//Bit manipulation to get index
-		index |= lookupPosition.x > nodePosition.x ? 2 : 0 ;
-		index |= lookupPosition.y > nodePosition.y ? 4 : 0 ;
-		index |= lookupPosition.z > nodePosition.z ? 1 : 0 ;
-
-		return index;
-	}
-
-	
-
-	
+	int GetIndexOfPosition(vec3 lookupPosition, vec3 nodePosition);
 };
 

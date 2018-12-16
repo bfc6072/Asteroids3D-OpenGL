@@ -20,12 +20,15 @@ public:
 	Asteroid(string const &path);
 	void Move(float dt);
 	void Rotate(float dt);
-	bool CheckCollision(Ship obj);
-	bool CheckBulletCollision(Bullet bullet);
+	vec3 GetRotation() { return rotation; }
+	bool CheckCollision(Ship obj); //Collision check between ships
+	bool CheckBulletCollision(Bullet bullet); //Collision check between bullet
+
 	/* Linear Physics */
 	//Primary
 	vec3 position;
 	vec3 momentum;
+	vec3 rotation; //Used as the rotation access currently
 
 	//Secondary
 	vec3 velocity;
@@ -46,15 +49,15 @@ public:
 	//constant
 	float inertia;
 	float inverseInertia;
+
 private:
-	float speed;
-	vec3 direction;
-	float radius;
-	vec3 RandVec3(float value);
-	void RecalcLinearMomentum() { velocity = momentum * inversemass; }
-	void RecalcAngularMomentum();
-	vec3 torque(float t) { return vec3(1, 0, 0) - angularVelocity * 0.1f; }
-	
+	float speed;	//Current speed
+	vec3 direction;	//Current forwawrd direction
+	float radius;	//Radius of asteriod
+	vec3 RandVec3(float value); //Generate random vec3 components
+	void RecalcLinearMomentum() { velocity = momentum * inversemass; } //Recalculate Linear Momentum
+	void RecalcAngularMomentum(); //Recalculate Angular Momentum
+	vec3 torque(float t) { return vec3(1, 0, 0) - angularVelocity * 0.1f; } //Angular torque
 };
 
 inline void Asteroid::Move(float dt)
@@ -77,6 +80,7 @@ inline void Asteroid::Rotate(float dt)
 inline Asteroid::Asteroid(string const &path) : GameObject(path)
 {
 	position = RandVec3(30);
+	rotation = RandVec3(180);
 	velocity = normalize(RandVec3(1));
 	mass = linearRand(1.0f, 3.0f);
 	inversemass = mass / 1;
@@ -102,8 +106,8 @@ inline bool Asteroid::CheckCollision(Ship ship)
 
 inline bool Asteroid::CheckBulletCollision(Bullet bullet)
 {
-	vec3 objMin = bullet.getMinBox();
-	vec3 objMax = bullet.getMaxBox();
+	vec3 objMin = bullet.GetMinBox();
+	vec3 objMax = bullet.GetMaxBox();
 	vec3 astMin = position - 2.5f;
 	vec3 astMax = position + 2.5f;
 	return	(objMin.x <= astMax.x && objMax.x >= astMin.x) &&

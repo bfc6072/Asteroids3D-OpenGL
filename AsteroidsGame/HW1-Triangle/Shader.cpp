@@ -1,6 +1,13 @@
+/*
+Authors: Barrington Campbell & Kaloyana Mihova
+Class: IGME.309.03
+Proffesor: David Schwartz
+
+File Name: Shader.h
+Description: Shader management class handles any shader information that needs to be changed and holds the
+necessary methods to manipulate different values.
+*/
 #include "Shader.h"
-
-
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath)
 {
@@ -103,6 +110,7 @@ void Shader::StartPipelineProgram()
 
 }
 
+//Activatee the shader pipeline 
 void Shader::StartPipelineProgram(glm::mat4 projection, glm::mat4 view, glm::mat4 model)
 {
 	glUseProgram(ID);
@@ -111,30 +119,39 @@ void Shader::StartPipelineProgram(glm::mat4 projection, glm::mat4 view, glm::mat
 	setMat4("model", model);
 }
 
+//Set boolean values in shader
 void Shader::setBool(const std::string &name, bool value) const
 {
 	glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
+	//Set boolean values in shader
 }
+
+//Set int values in shader
 void Shader::setInt(const std::string &name, int value) const
 {
 	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 
 }
+
+//Set float values in shader
 void Shader::setFloat(const std::string &name, float value) const
 {
 	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
 
+//Set vector3 values in shader
 void Shader::setVec3(const string &name, glm::vec3 value) const
 {
 	glUniform3f(glGetUniformLocation(ID, name.c_str()), value.x, value.y, value.z);
 }
 
+//Set Matrix4 values in shader
 void Shader::setMat4(const string &name, glm::mat4 value) const
 {
 	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, false, value_ptr(value));
 }
 
+//Set pointlight values
 void Shader::setPointLight(Shader::LightSettings settings)
 {
 	setVec3(settings.name + ".position", settings.position);

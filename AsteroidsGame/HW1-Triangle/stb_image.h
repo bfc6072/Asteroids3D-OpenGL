@@ -1,3 +1,10 @@
+/*
+Authors: http://nothings.org/stb
+
+File Name: stb_image.h
+Description: Image loader
+*/
+
 /* stb_image - v2.19 - public domain image loader - http://nothings.org/stb
 								  no warranty implied; use at your own risk
    Do this:

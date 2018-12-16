@@ -1,3 +1,12 @@
+/*
+Authors: Barrington Campbell & Kaloyana Mihova
+Class: IGME.309.03
+Proffesor: David Schwartz
+
+File Name: GameObject.h
+Description: GameObject header file. This is the aparent to every object type that will
+be rendered in game.
+*/
 #include "GameObject.h"
 
 unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false);

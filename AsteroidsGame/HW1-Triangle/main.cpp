@@ -160,6 +160,7 @@ int main()
 				model[2][0] = shearAxis.z * (ship.getSpeed() * 10.0f);// ship.getSpeed();
 				model[2][1] = shearAxis.z * (ship.getSpeed() * 10.0f);// ship.getSpeed();
 				//model[1][0] = ship.getSpeed() * 10.0f;// ship.getSpeed();
+				model = rotate(model, 90.0f, obj->GetRotation());
 				shader.setMat4("model", model);
 				obj->Draw(shader);
 
@@ -202,7 +203,7 @@ int main()
 				}
 
 				model = mat4(1.0f);
-				model = translate(model, bullet->getPosition());
+				model = translate(model, bullet->GetPosition());
 				shader.setMat4("model", model);
 				bullet->Draw(shader);
 			}

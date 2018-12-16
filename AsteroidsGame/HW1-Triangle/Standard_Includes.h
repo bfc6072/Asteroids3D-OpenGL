@@ -1,3 +1,11 @@
+/*
+Authors: Barrington Campbell & Kaloyana Mihova
+Class: IGME.309.03
+Proffesor: David Schwartz
+
+File Name: Standard_Includes.h
+Description: Standard include files used to clean up files as another level of data abstraction
+*/
 #pragma once
 
 #include <GLAD/glad.h>

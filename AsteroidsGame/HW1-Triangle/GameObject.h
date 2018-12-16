@@ -24,15 +24,14 @@ public:
 
 	/*  Functions   */
 	GameObject(string const &path);
-	GameObject(string const &path, vec3 pos, vec3 vel);// , bool gamma = false);
 	void Draw(Shader shader);
-	void update(float dt, glm::mat4 PV);
 	Mesh* model()
 	{
 		return &meshes[0];
 	}
-
-	void recalcVelocty();
+	vec3 direction;
+	virtual vec3 getMinBox() { return position - 2.5f; }
+	virtual vec3 getMaxBox() { return position + 2.5f; }
 	~GameObject();
 
 private:

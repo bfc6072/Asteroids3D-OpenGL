@@ -1,19 +1,22 @@
 #pragma once
 #include "Standard_Includes.h"
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/random.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include "Shader.h"
 #include "stb_image.h"
 #include "Camera.h"
 #include "GameObject.h"
 #include "Ship.h"
 #include "Asteroid.h"
+#include "Bullet.h"
 
 #pragma region Global Variables
 //Window Settings
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); //GLFW will automatically call this when window is resized and paramaters will be filled
 //void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window, Ship *ship);
+void processInput(GLFWwindow *window, Ship *ship, float time, vector<Bullet> *bulletList);
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 typedef Shader::LightSettings lightsettings;

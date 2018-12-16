@@ -48,10 +48,11 @@ int main()
 	//Build and compile shader
 	Shader shader("VertexShader.vert", "FragmentShader.frag");
 	int asteroidCount = 300;
-	vector<Asteroid> objectList;
+	vector<Asteroid> asteroidList;
+	vector<Bullet> bulletList;
 	for (int i = 0; i < asteroidCount; i++)
 	{
-		objectList.push_back(Asteroid("resources/Ball.obj"));
+		asteroidList.push_back(Asteroid("resources/Ball.obj"));
 	}
 	
 	Ship ship("resources/ship.obj");
@@ -64,7 +65,7 @@ int main()
 	shader.StartPipelineProgram();
 	shader.setInt("material.diffuse", 2); // or with shader class
 	shader.setInt("material.specular", 1);
-	SetLighting(shader, &objectList[0]);
+	SetLighting(shader, &asteroidList[0]);
 
 	//Bind textures
 	glActiveTexture(GL_TEXTURE0);
@@ -85,7 +86,7 @@ int main()
 		lastFrame = currentFrame;
 
 		//Input commands
-		processInput(window, &ship);
+		processInput(window, &ship, currentFrame, &bulletList);
 		ship.fly();
 		
 		//Rendering commands
@@ -107,15 +108,59 @@ int main()
 		//Draw our Objects
 		for (int i = 0; i < asteroidCount; i++)
 		{
-			Asteroid* obj = &objectList[i];
+			Asteroid* obj = &asteroidList[i];
 			obj->Move(deltaTime);
+			obj->Rotate(deltaTime);
 			model = mat4(1.0f);
 			model = translate(model, obj->position);
+			model[1][0] = ship.getSpeed() * 10.0f;// ship.getSpeed();
 			shader.setMat4("model", model);
 			obj->Draw(shader);
+
+			/*if (length(obj->position - (ship.getPosition() + (ship.getDirection() * 4.8f))) < 3)
+			{
+				cout << "Should hit";
+			}*/
+			if ((int)currentFrame % 2 == 0)
+			{
+				if (obj->CheckCollision(ship))
+				{
+					asteroidList.erase(asteroidList.begin() + i);
+					asteroidCount--;
+				}
+
+			}
+
+			for (int k = 0; k < bulletList.size(); k++)
+			{
+				Bullet bullet = bulletList[k];
+				if (obj->CheckBulletCollision(bulletList[k]))
+				{
+					asteroidList.erase(asteroidList.begin() + i);
+					asteroidCount--;
+					bulletList.erase(bulletList.begin() + k);
+					ship.shooting = false;
+				}
+			}
+		}
+
+		for (int i = 0; i < bulletList.size(); i++)
+		{
+			Bullet* bullet = &bulletList[i];
+			if (bullet->Fly(currentFrame))
+			{
+				bulletList.erase(bulletList.begin() + i);
+				ship.shooting = false;
+			}
+
+			model = mat4(1.0f);
+			model = translate(model, bullet->getPosition());
+			shader.setMat4("model", model);
+			bullet->Draw(shader);
 		}
 		model = mat4(1.0f);
 		model = inverse(glm::lookAt(eye, at, up));
+		
 		shader.setMat4("model", model);
 		ship.Draw(shader);
 		
@@ -135,7 +180,7 @@ int main()
 /*
 * Input method
 */
-void processInput(GLFWwindow *window, Ship *ship)
+void processInput(GLFWwindow *window, Ship *ship, float time, vector<Bullet> *bulletList)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -157,7 +202,11 @@ void processInput(GLFWwindow *window, Ship *ship)
 		ship->roll(-0.02f);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		ship->roll(0.02f);
-
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !ship->shooting)
+	{
+		bulletList->push_back(Bullet("resources/Ball.obj", ship->getPosition(), ship->getDirection(), time));
+		ship->Shoot();
+	}
 
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
 		ship->teleport(vec3(0,0,0));
@@ -285,7 +334,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) //GLFW
 // ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	//camera.ProcessMouseScroll(yoffset);
+	camera.ProcessMouseScroll(yoffset);
 }
 
 //struct LightSettings

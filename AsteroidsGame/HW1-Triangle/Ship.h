@@ -4,6 +4,7 @@ class Ship : public GameObject {
 	vec3 position;
 	vec3 forward, up, right;
 	float speed;
+	float shearAmount;
 public:
 	
 	Ship(string const &path, vec3 initialPos = vec3(0, 0, 0)); 
@@ -16,7 +17,13 @@ public:
 	void roll(float angle);
 	void yaw(float angle);
 	float getSpeed() { return speed; }
+	float getShear() { return shearAmount; }
 	void setSpeed(float newSpeed) { speed += newSpeed; }
+	vec3 getMinBox() { return (position + (forward * 5.0f)) - 1.0f; }
+	vec3 getMaxBox() { return (position + (forward * 5.0f)) + 1.0f; }
+	void Shoot() { shooting = !shooting;  }
+	bool shooting;
+
 };
 
 inline Ship::Ship(string const &path, vec3 initialPos) : GameObject(path)
@@ -26,7 +33,10 @@ inline Ship::Ship(string const &path, vec3 initialPos) : GameObject(path)
 	up = vec3(0, 1, 0);
 	right = vec3(1, 0, 0);
 	speed = 0.01;
+	shearAmount = -0.0001f;
+	shooting = false;
 }
+
 
 inline void Ship::pitch(float angle)
 {

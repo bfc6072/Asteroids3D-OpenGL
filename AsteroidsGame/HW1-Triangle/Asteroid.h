@@ -3,13 +3,17 @@
 #include <time.h>
 #include <stdlib.h> 
 #include <glm/gtc/random.hpp>
+#include "Bullet.h"
 
 class Asteroid : public GameObject
 {
 public:
 	Asteroid(string const &path);
 	void Move(float dt);
-	/* Physics */
+	void Rotate(float dt);
+	bool CheckCollision(Ship obj);
+	bool CheckBulletCollision(Bullet bullet);
+	/* Linear Physics */
 	//Primary
 	vec3 position;
 	vec3 momentum;
@@ -21,12 +25,26 @@ public:
 	float mass;
 	float inversemass;
 
+	/* Angular Physics */
+	//Primary
+	quat orientation;
+	vec3 angularMomentum;
+
+	//Secondary
+	quat spin;
+	vec3 angularVelocity;
+
+	//constant
+	float inertia;
+	float inverseInertia;
 private:
 	float speed;
 	vec3 direction;
+	float radius;
 	vec3 RandVec3(float value);
-	void Recalculate() { velocity = momentum * inversemass; }
-	
+	void RecalcLinearMomentum() { velocity = momentum * inversemass; }
+	void RecalcAngularMomentum();
+	vec3 torque(float t) { return vec3(1, 0, 0) - angularVelocity * 0.1f; }
 	
 };
 
@@ -42,6 +60,11 @@ inline void Asteroid::Move(float dt)
 	position += velocity * dt;
 }
 
+inline void Asteroid::Rotate(float dt)
+{
+	angularVelocity *= dt;
+}
+
 inline Asteroid::Asteroid(string const &path) : GameObject(path)
 {
 	position = RandVec3(30);
@@ -50,8 +73,43 @@ inline Asteroid::Asteroid(string const &path) : GameObject(path)
 	inversemass = mass / 1;
 	momentum = mass * velocity;
 
-	direction = normalize(RandVec3(1));
+	angularVelocity = vec3(1, 0, 0);
+
+
+	direction = velocity;
 	speed = linearRand(0.01f, 0.02f);
+}
+
+inline bool Asteroid::CheckCollision(Ship ship)
+{
+	vec3 objMin = ship.getMinBox();
+	vec3 objMax = ship.getMaxBox();
+	vec3 astMin = position - 2.5f;
+	vec3 astMax = position + 2.5f;
+	return	(objMin.x <= astMax.x && objMax.x >= astMin.x) &&
+			(objMin.y <= astMax.y && objMax.y >= astMin.y) &&
+			(objMin.z <= astMax.z && objMax.z >= astMin.z);
+}
+
+inline bool Asteroid::CheckBulletCollision(Bullet bullet)
+{
+	vec3 objMin = bullet.getMinBox();
+	vec3 objMax = bullet.getMaxBox();
+	vec3 astMin = position - 2.5f;
+	vec3 astMax = position + 2.5f;
+	return	(objMin.x <= astMax.x && objMax.x >= astMin.x) &&
+		(objMin.y <= astMax.y && objMax.y >= astMin.y) &&
+		(objMin.z <= astMax.z && objMax.z >= astMin.z);
+}
+
+inline void Asteroid::RecalcAngularMomentum()
+{
+	angularVelocity = angularMomentum * inverseInertia;
+
+	normalize(orientation);
+
+	quat q = quat(0, angularVelocity.x, angularVelocity.y, angularVelocity.z);
+	spin = 0.5f * q * orientation;
 }
 
 inline vec3 Asteroid::RandVec3(float value)

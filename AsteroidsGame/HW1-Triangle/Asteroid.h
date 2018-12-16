@@ -1,3 +1,12 @@
+/*
+ Authors: Barrington Campbell & Kaloyana Mihova
+ Class: IGME.309.03
+ Proffesor: David Schwartz
+
+ File Name: Main_Fixed_Data.h
+ Description: Stores data neceassry to run the main program. Another level of abstraction to
+			  clean up  main.cpp.
+*/
 #pragma once
 #include "GameObject.h"
 #include <time.h>

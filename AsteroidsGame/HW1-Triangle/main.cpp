@@ -1,3 +1,13 @@
+/*
+ Authors: Barrington Campbell & Kaloyana Mihova
+ Class: IGME.309.03
+ Proffesor: David Schwartz
+
+ File Name: main.cpp
+ Description: This is the main class for the game. Inside this class we have references to most
+			  objects as well as the main game loop.
+*/
+
 #include "Main_Fixed_Data.h"
 
 int main()
@@ -52,16 +62,17 @@ int main()
 	vector<Bullet> bulletList;
 	for (int i = 0; i < asteroidCount; i++)
 	{
-		asteroidList.push_back(Asteroid("resources/Ball.obj"));
+		asteroidList.push_back(Asteroid("resources/Asteroid.obj"));
 	}
 	
-	Ship ship("resources/ship.obj");
 
-
+	Ship ship("resources/ship.obj", vec3(0, 0, 50));
+	GameObject galaxy("resources/Galaxy.obj");
 
 	unsigned int crate_diffuse = LoadTexture("container.png");
 	unsigned int crate_specular = LoadTexture("container_specular.png");
 	unsigned int pinball_diffuse = LoadTexture("resources/Pinball.jpg");
+	unsigned int galaxy_diffuse = LoadTexture("resources/Galaxy.png");
 	shader.StartPipelineProgram();
 	shader.setInt("material.diffuse", 2); // or with shader class
 	shader.setInt("material.specular", 1);
@@ -74,8 +85,19 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, crate_specular);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, pinball_diffuse);
-#pragma endregion
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, galaxy_diffuse);
 
+	vector<unsigned int> menus = {
+	galaxy_diffuse,
+	pinball_diffuse,
+	crate_specular
+	};
+	/*menus.push_back(galaxy_diffuse);
+	menus.push_back(pinball_diffuse);
+	menus.push_back(crate_specular);*/
+	Menu menu("resources/MenuPlane.obj", menus);
+#pragma endregion
 #pragma region Game Loop
 	//====Game loop====
 	while (!glfwWindowShouldClose(window)) //Check if the window is supposed to close
@@ -86,7 +108,7 @@ int main()
 		lastFrame = currentFrame;
 
 		//Input commands
-		processInput(window, &ship, currentFrame, &bulletList);
+		processInput(window, &ship, &menu, currentFrame, &bulletList);
 		ship.fly();
 		
 		//Rendering commands
@@ -94,7 +116,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//View/Projection/world transform
-		mat4 projection = perspective(glm::radians(camera.Zoom), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
+		mat4 projection = perspective(glm::radians(camera.Zoom), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 5000.0f);
 		vec3 eye = ship.getPosition();
 		vec3 at = eye + ship.getDirection();
 		vec3 up = ship.getVertical();
@@ -105,65 +127,99 @@ int main()
 		shader.setFloat("material.shininess", 32.0f);
 		shader.setMat4("model", model);
 
-		//Draw our Objects
-		for (int i = 0; i < asteroidCount; i++)
+		//MenuPlane
+		if (menu.InMenu())
 		{
-			Asteroid* obj = &asteroidList[i];
-			obj->Move(deltaTime);
-			obj->Rotate(deltaTime);
+			shader.setInt("material.diffuse", menu.CurrentMenu()); // or with shader class
+			menu.Draw(shader);
+		}
+		else
+		{
+			//GalaxyDraw
 			model = mat4(1.0f);
-			model = translate(model, obj->position);
-			model[1][0] = ship.getSpeed() * 10.0f;// ship.getSpeed();
+			shader.setInt("material.diffuse", 3); // or with shader class
 			shader.setMat4("model", model);
-			obj->Draw(shader);
+			galaxy.Draw(shader);
 
-			/*if (length(obj->position - (ship.getPosition() + (ship.getDirection() * 4.8f))) < 3)
+			shader.setInt("material.diffuse", 2); // or with shader class
+			//Asteroid Draw
+			for (int i = 0; i < asteroidCount; i++)
 			{
-				cout << "Should hit";
-			}*/
-			if ((int)currentFrame % 2 == 0)
-			{
-				if (obj->CheckCollision(ship))
+				Asteroid* obj = &asteroidList[i];
+				obj->Move(deltaTime);
+				obj->Rotate(deltaTime);
+				model = mat4(1.0f);
+				model = translate(model, obj->position);
+				vec3 shearAxis = normalize(obj->position - ship.getPosition());
+
+				//Shear toward player
+				model[0][1] = shearAxis.x * (ship.getSpeed() * 10.0f);// ship.getSpeed();
+				model[0][2] = shearAxis.x * (ship.getSpeed() * 10.0f);// ship.getSpeed();
+				model[1][0] = shearAxis.y * (ship.getSpeed() * 10.0f);// ship.getSpeed();
+				model[1][2] = shearAxis.y * (ship.getSpeed() * 10.0f);// ship.getSpeed();
+				model[2][0] = shearAxis.z * (ship.getSpeed() * 10.0f);// ship.getSpeed();
+				model[2][1] = shearAxis.z * (ship.getSpeed() * 10.0f);// ship.getSpeed();
+				//model[1][0] = ship.getSpeed() * 10.0f;// ship.getSpeed();
+				shader.setMat4("model", model);
+				obj->Draw(shader);
+
+				/*if (length(obj->position - (ship.getPosition() + (ship.getDirection() * 4.8f))) < 3)
 				{
-					asteroidList.erase(asteroidList.begin() + i);
-					asteroidCount--;
+					cout << "Should hit";
+				}*/
+				if ((int)currentFrame % 2 == 0)
+				{
+					if (ship.IsAlive() && obj->CheckCollision(ship))
+					{
+						asteroidList.erase(asteroidList.begin() + i);
+						asteroidCount--;
+						ship.TakeDamage();
+					}
+
 				}
 
+				for (int k = 0; k < bulletList.size(); k++)
+				{
+					Bullet bullet = bulletList[k];
+					if (obj->CheckBulletCollision(bulletList[k]))
+					{
+						asteroidList.erase(asteroidList.begin() + i);
+						asteroidCount--;
+						bulletList.erase(bulletList.begin() + k);
+						ship.shooting = false;
+					}
+				}
 			}
 
-			for (int k = 0; k < bulletList.size(); k++)
+			//Bullet Draw
+			for (int i = 0; i < bulletList.size(); i++)
 			{
-				Bullet bullet = bulletList[k];
-				if (obj->CheckBulletCollision(bulletList[k]))
+				Bullet* bullet = &bulletList[i];
+				if (bullet->Fly(currentFrame))
 				{
-					asteroidList.erase(asteroidList.begin() + i);
-					asteroidCount--;
-					bulletList.erase(bulletList.begin() + k);
+					bulletList.erase(bulletList.begin() + i);
 					ship.shooting = false;
 				}
-			}
-		}
 
-		for (int i = 0; i < bulletList.size(); i++)
-		{
-			Bullet* bullet = &bulletList[i];
-			if (bullet->Fly(currentFrame))
+				model = mat4(1.0f);
+				model = translate(model, bullet->getPosition());
+				shader.setMat4("model", model);
+				bullet->Draw(shader);
+			}
+
+			//Ship Draw
+			if (ship.IsAlive())
 			{
-				bulletList.erase(bulletList.begin() + i);
-				ship.shooting = false;
-			}
+				model = mat4(1.0f);
+				model = inverse(glm::lookAt(eye, at, up));
 
-			model = mat4(1.0f);
-			model = translate(model, bullet->getPosition());
-			shader.setMat4("model", model);
-			bullet->Draw(shader);
+				shader.setMat4("model", model);
+				ship.Draw(shader);
+			}
 		}
-		model = mat4(1.0f);
-		model = inverse(glm::lookAt(eye, at, up));
 		
-		shader.setMat4("model", model);
-		ship.Draw(shader);
 		
+
 		//Check and call events | Buffer swapping
 		glfwSwapBuffers(window);
 		glfwPollEvents(); //Checks for events triggerd (Ex: keyboard or mouse input)
@@ -180,12 +236,24 @@ int main()
 /*
 * Input method
 */
-void processInput(GLFWwindow *window, Ship *ship, float time, vector<Bullet> *bulletList)
+void processInput(GLFWwindow *window, Ship *ship, Menu *menu, float time, vector<Bullet> *bulletList)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-
+	if (menu->GetChangeable() && glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+	{
+		if (menu->InMenu())
+		{
+			menu->Next();
+			menu->SetChangeable(false);
+		}
+		
+	}
+	else if(!(menu->GetChangeable()) && glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_RELEASE)
+	{
+		menu->SetChangeable(true);
+	}
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
 		ship->setSpeed(deltaTime / 100); //camera.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
@@ -202,14 +270,14 @@ void processInput(GLFWwindow *window, Ship *ship, float time, vector<Bullet> *bu
 		ship->roll(-0.02f);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		ship->roll(0.02f);
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !ship->shooting)
+	if (ship->IsAlive() && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !ship->shooting)
 	{
-		bulletList->push_back(Bullet("resources/Ball.obj", ship->getPosition(), ship->getDirection(), time));
+		bulletList->push_back(Bullet("resources/Asteroid.obj", ship->getPosition(), ship->getDirection(), time));
 		ship->Shoot();
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		ship->teleport(vec3(0,0,0));
+		ship->ResetShip();
 }
 
 unsigned int LoadTexture(string path)

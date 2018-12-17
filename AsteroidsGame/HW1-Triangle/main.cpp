@@ -12,6 +12,9 @@
 
 int main()
 {
+	//Memory Leak Detection
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	
 #pragma region Window and GLAD initialization
 	//====Initialize glfw====
 	glfwInit();
@@ -57,7 +60,7 @@ int main()
 
 	//Build and compile shader
 	Shader shader("VertexShader.vert", "FragmentShader.frag");
-	int asteroidCount = 300;
+	int asteroidCount = 50;
 	vector<Asteroid> asteroidList;
 	vector<Bullet> bulletList;
 	for (int i = 0; i < asteroidCount; i++)
@@ -73,6 +76,10 @@ int main()
 	unsigned int crate_specular = LoadTexture("container_specular.png");
 	unsigned int pinball_diffuse = LoadTexture("resources/Pinball.jpg");
 	unsigned int galaxy_diffuse = LoadTexture("resources/Galaxy.png");
+	unsigned int menu_intro = LoadTexture("resources/OpeningCredits.png");
+	unsigned int menu_controls = LoadTexture("resources/Controls.png");
+	unsigned int menu_credits = LoadTexture("resources/EndCredits.png");
+	unsigned int menu_pause = LoadTexture("resources/Paused.png");
 	shader.StartPipelineProgram();
 	shader.setInt("material.diffuse", 2); // or with shader class
 	shader.setInt("material.specular", 1);
@@ -87,16 +94,24 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, pinball_diffuse);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, galaxy_diffuse);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, menu_intro);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, menu_controls);
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, menu_credits);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, menu_pause);
+
 
 	vector<unsigned int> menus = {
-	galaxy_diffuse,
-	pinball_diffuse,
-	crate_specular
+	menu_intro,
+	menu_controls,
+	menu_credits
 	};
-	/*menus.push_back(galaxy_diffuse);
-	menus.push_back(pinball_diffuse);
-	menus.push_back(crate_specular);*/
-	Menu menu("resources/MenuPlane.obj", menus);
+
+
+	Menu menu("resources/MenuPlane2.obj", menus, menu_pause);
 #pragma endregion
 #pragma region Game Loop
 	//====Game loop====
@@ -128,9 +143,11 @@ int main()
 		shader.setMat4("model", model);
 
 		//MenuPlane
-		if (menu.InMenu())
+		if (menu.InMenu() || menu.GetPause())
 		{
 			shader.setInt("material.diffuse", menu.CurrentMenu()); // or with shader class
+			model = inverse(glm::lookAt(eye, at, up));
+			shader.setMat4("model", model);
 			menu.Draw(shader);
 		}
 		else
@@ -159,7 +176,6 @@ int main()
 				model[1][2] = shearAxis.y * (ship.getSpeed() * 10.0f);// ship.getSpeed();
 				model[2][0] = shearAxis.z * (ship.getSpeed() * 10.0f);// ship.getSpeed();
 				model[2][1] = shearAxis.z * (ship.getSpeed() * 10.0f);// ship.getSpeed();
-				//model[1][0] = ship.getSpeed() * 10.0f;// ship.getSpeed();
 				model = rotate(model, 90.0f, obj->GetRotation());
 				shader.setMat4("model", model);
 				obj->Draw(shader);
@@ -242,6 +258,7 @@ void processInput(GLFWwindow *window, Ship *ship, Menu *menu, float time, vector
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
+	//Toggle Main Menu
 	if (menu->GetChangeable() && glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
 	{
 		if (menu->InMenu())
@@ -251,10 +268,21 @@ void processInput(GLFWwindow *window, Ship *ship, Menu *menu, float time, vector
 		}
 		
 	}
-	else if(!(menu->GetChangeable()) && glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_RELEASE)
+	//Toggle Pause Menu
+	if (menu->GetChangeable() && glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+	{
+		menu->SetPause(true);
+		menu->SetChangeable(false);
+	}
+	//Untoggle
+	if (!(menu->GetChangeable()) && glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_RELEASE && glfwGetKey(window, GLFW_KEY_P) == GLFW_RELEASE)
 	{
 		menu->SetChangeable(true);
 	}
+	/*else if (!(menu->GetChangeable()) && menu->GetPause() && glfwGetKey(window, GLFW_KEY_P) == GLFW_RELEASE)
+	{
+		menu->SetChangeable(true);
+	}*/
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
 		ship->setSpeed(deltaTime / 100); //camera.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
@@ -271,7 +299,7 @@ void processInput(GLFWwindow *window, Ship *ship, Menu *menu, float time, vector
 		ship->roll(-0.02f);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		ship->roll(0.02f);
-	if (ship->IsAlive() && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !ship->shooting)
+	if (ship->IsAlive() &&  !ship->shooting &&  (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS))
 	{
 		bulletList->push_back(Bullet("resources/Asteroid.obj", ship->getPosition(), ship->getDirection(), time));
 		ship->Shoot();

@@ -12,8 +12,32 @@
 #include<glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include<glm/common.hpp>
+#include<irrklang/irrKlang.h>
+#include<Windows.h>
+#include "MMSystem.h"
+
+// Also, we tell the compiler to use the namespaces 'irrklang'.
+// All classes and functions of irrKlang can be found in the namespace 'irrklang'.
+// If you want to use a class of the engine,
+// you'll have to type an irrklang:: before the name of the class.
+// For example, to use the ISoundEngine, write: irrklang::ISoundEngine. To avoid having
+// to put irrklang:: before of the name of every class, we tell the compiler that
+// we use that namespaces here.
+
+using namespace irrklang;
+
+// To be able to use the irrKlang.dll file, we need to link with the irrKlang.lib.
+// We could set this option in the project settings, but to make it easy we use
+// a pragma comment:
+
+//#pragma comment(lib, "irrKlang.lib") // link with irrKlang.dll
+
+
+//ISoundEngine* engine = createIrrKlangDevice();
 int main()
 {
+
+	sndPlaySound(TEXT("loopmusic.wav"), SND_ASYNC);
 	//Memory Leak Detection
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	
@@ -134,6 +158,9 @@ int main()
 	Menu menu("resources/MenuPlane2.obj", menus, menu_pause);
 #pragma endregion
 #pragma region Game Loop
+
+
+
 	//====Game loop====
 	while (!glfwWindowShouldClose(window)) //Check if the window is supposed to close
 	{
@@ -340,6 +367,8 @@ void processInput(GLFWwindow *window, Ship *ship, Menu *menu, float time, vector
 		ship->roll(0.02f);
 	if (ship->IsAlive() &&  !ship->shooting &&  (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS))
 	{
+		//sndPlaySound(TEXT("shot.wav"), SND_ASYNC);
+		//sndPlaySound("shot.wav", NULL, SND_LOOP | SND_ASYNC);
 		bulletList->push_back(Bullet("resources/Asteroid.obj", ship->getPosition(), ship->getDirection(), time));
 		ship->Shoot();
 	}

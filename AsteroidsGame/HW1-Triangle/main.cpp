@@ -9,7 +9,9 @@
 */
 
 #include "Main_Fixed_Data.h"
-
+#include<glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include<glm/common.hpp>
 int main()
 {
 	//Memory Leak Detection
@@ -60,26 +62,42 @@ int main()
 
 	//Build and compile shader
 	Shader shader("VertexShader.vert", "FragmentShader.frag");
-	int asteroidCount = 50;
+	int asteroidCount = 200;
 	vector<Asteroid> asteroidList;
 	vector<Bullet> bulletList;
 	for (int i = 0; i < asteroidCount; i++)
 	{
-		asteroidList.push_back(Asteroid("resources/Asteroid.obj"));
+		int rand = linearRand(0, 2);
+		switch (rand)
+		{
+		case 0:
+			asteroidList.push_back(Asteroid("resources/Asteroid1.obj"));
+			break;
+		case 1:
+			asteroidList.push_back(Asteroid("resources/Asteroid2.obj"));
+			break;
+		case 2:
+			asteroidList.push_back(Asteroid("resources/Asteroid3.obj"));
+			break;
+		default:
+			asteroidList.push_back(Asteroid("resources/Asteroid.obj"));
+			break;
+		}
 	}
 	
 
 	Ship ship("resources/ship.obj", vec3(0, 0, 50));
 	GameObject galaxy("resources/Galaxy.obj");
 
-	unsigned int crate_diffuse = LoadTexture("container.png");
-	unsigned int crate_specular = LoadTexture("container_specular.png");
-	unsigned int pinball_diffuse = LoadTexture("resources/Pinball.jpg");
+	unsigned int ship_diffuse = LoadTexture("container.png");
+	unsigned int ship_specular = LoadTexture("container_specular.png");
+	unsigned int bullet_diffuse = LoadTexture("resources/Pinball.jpg");
 	unsigned int galaxy_diffuse = LoadTexture("resources/Galaxy.png");
 	unsigned int menu_intro = LoadTexture("resources/OpeningCredits.png");
 	unsigned int menu_controls = LoadTexture("resources/Controls.png");
 	unsigned int menu_credits = LoadTexture("resources/EndCredits.png");
 	unsigned int menu_pause = LoadTexture("resources/Paused.png");
+	unsigned int asteroid_diffuse = LoadTexture("resources/T_Asteroid.jpg");
 	shader.StartPipelineProgram();
 	shader.setInt("material.diffuse", 2); // or with shader class
 	shader.setInt("material.specular", 1);
@@ -87,21 +105,23 @@ int main()
 
 	//Bind textures
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, crate_diffuse);
+	glBindTexture(GL_TEXTURE_2D, ship_diffuse--);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, crate_specular);
+	glBindTexture(GL_TEXTURE_2D, ship_specular--);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, pinball_diffuse);
+	glBindTexture(GL_TEXTURE_2D, bullet_diffuse--);
 	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, galaxy_diffuse);
+	glBindTexture(GL_TEXTURE_2D, galaxy_diffuse--);
 	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, menu_intro);
+	glBindTexture(GL_TEXTURE_2D, menu_intro--);
 	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, menu_controls);
+	glBindTexture(GL_TEXTURE_2D, menu_controls--);
 	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, menu_credits);
+	glBindTexture(GL_TEXTURE_2D, menu_credits--);
 	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, menu_pause);
+	glBindTexture(GL_TEXTURE_2D, menu_pause--);
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, asteroid_diffuse--);
 
 
 	vector<unsigned int> menus = {
@@ -145,7 +165,7 @@ int main()
 		//MenuPlane
 		if (menu.InMenu() || menu.GetPause())
 		{
-			shader.setInt("material.diffuse", menu.CurrentMenu()); // or with shader class
+			shader.setInt("material.diffuse", menu.CurrentMenu());
 			model = inverse(glm::lookAt(eye, at, up));
 			shader.setMat4("model", model);
 			menu.Draw(shader);
@@ -154,11 +174,15 @@ int main()
 		{
 			//GalaxyDraw
 			model = mat4(1.0f);
-			shader.setInt("material.diffuse", 3); // or with shader class
+			shader.setInt("material.diffuse", galaxy_diffuse); // or with shader class
+			shader.setVec3("dirLight.ambient", vec3(0.5f, 0.5f, 0.5f));
+
 			shader.setMat4("model", model);
 			galaxy.Draw(shader);
 
-			shader.setInt("material.diffuse", 2); // or with shader class
+			shader.setInt("material.diffuse", asteroid_diffuse); // or with shader class
+			shader.setVec3("dirLight.ambient", vec3(0.1f, 0.1f, 0.1f));
+
 			//Asteroid Draw
 			for (int i = 0; i < asteroidCount; i++)
 			{
@@ -176,6 +200,11 @@ int main()
 				model[1][2] = shearAxis.y * (ship.getSpeed() * 10.0f);// ship.getSpeed();
 				model[2][0] = shearAxis.z * (ship.getSpeed() * 10.0f);// ship.getSpeed();
 				model[2][1] = shearAxis.z * (ship.getSpeed() * 10.0f);// ship.getSpeed();
+				quat rotation = mix(quat(0, 0, 0, 1), quat(1, 0, 0, 0), currentFrame  * .1f);
+				//quat rotation = mix(quat(0, 0, 0, 1), quat(0.008, 0, 0, .99), sin(currentFrame));
+
+				mat4 rotationMatrix = toMat4(rotation);
+				model *= rotationMatrix;
 				model = rotate(model, 90.0f, obj->GetRotation());
 				shader.setMat4("model", model);
 				obj->Draw(shader);
@@ -184,16 +213,24 @@ int main()
 				{
 					cout << "Should hit";
 				}*/
-				if ((int)currentFrame % 2 == 0)
+				if (ship.IsAlive() && length(obj->position - (ship.getPosition() + (ship.getDirection() * 4.8f))) < 3)
 				{
-					if (ship.IsAlive() && obj->CheckCollision(ship))
+					if (obj->CheckCollision(ship))
 					{
 						asteroidList.erase(asteroidList.begin() + i);
 						asteroidCount--;
 						ship.TakeDamage();
 					}
-
 				}
+
+				/*for (int z = 0; z < asteroidCount; z++)
+				{
+					if (length(asteroidList[z].position - obj->position) < .001f)
+					{
+						asteroidList.erase(asteroidList.begin() + i);
+						asteroidCount--;
+					}
+				}*/
 
 				for (int k = 0; k < bulletList.size(); k++)
 				{
@@ -209,6 +246,7 @@ int main()
 			}
 
 			//Bullet Draw
+			shader.setInt("material.diffuse", bullet_diffuse);
 			for (int i = 0; i < bulletList.size(); i++)
 			{
 				Bullet* bullet = &bulletList[i];
@@ -225,6 +263,7 @@ int main()
 			}
 
 			//Ship Draw
+			shader.setInt("material.diffuse", ship_diffuse);
 			if (ship.IsAlive())
 			{
 				model = mat4(1.0f);
@@ -356,7 +395,7 @@ void SetLighting(Shader shader, GameObject objectList[])
 
 	// directional light
 	shader.setVec3("dirLight.direction", vec3(-0.2f, -1.0f, -0.3f));
-	shader.setVec3("dirLight.ambient", vec3(0.05f, 0.05f, 0.05f));
+	shader.setVec3("dirLight.ambient", vec3(0.2f, 0.2f, 0.2f));
 	shader.setVec3("dirLight.diffuse", vec3(0.4f, 0.4f, 0.4f));
 	shader.setVec3("dirLight.specular", vec3(0.5f, 0.5f, 0.5f));
 	// point light 1

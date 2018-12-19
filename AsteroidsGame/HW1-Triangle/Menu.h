@@ -19,7 +19,7 @@ class Menu : public GameObject {
 public:
 	Menu(string const &path, std::vector<unsigned int> MenuIndex, unsigned int pause);
 	bool InMenu() { return menus.size() > 0; }				//True if the player is in a menu sequence
-	unsigned int CurrentMenu() { return menus.front() -1; }	//Returns current menu lookup Int
+	unsigned int CurrentMenu() { return menus.front(); }	//Returns current menu lookup Int
 	unsigned int Pause() { return pauseLookup; }
 	bool GetPause() { return isPaused; }
 	void SetPause(bool value)

@@ -24,9 +24,9 @@ public:
 	void ResetShip();
 	bool IsAlive() { return health > 0; }
 	void TakeDamage() { health--; }
-	void setSpeed(float newSpeed) { speed += newSpeed; }
-	vec3 getMinBox() { return (position + (forward * 5.0f)) - 1.0f; }
-	vec3 getMaxBox() { return (position + (forward * 5.0f)) + 1.0f; }
+	void setSpeed(float newSpeed);// { clamp((int)(speed += newSpeed), 0, 10); }
+	vec3 getMinBox() { return (position + forward * 5.0f) - 1.0f; }
+	vec3 getMaxBox() { return (position + forward * 5.0f) + 1.0f; }
 	void Shoot() { shooting = !shooting;  }
 	bool shooting;
 
@@ -56,6 +56,12 @@ inline void Ship::ResetShip()
 	shearAmount = -0.0001f;
 	shooting = false;
 	health = 3;
+}
+
+void Ship::setSpeed(float newSpeed) 
+{ 
+	speed += newSpeed;
+	speed = abs(speed);
 }
 
 inline void Ship::pitch(float angle)
